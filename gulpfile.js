@@ -10,7 +10,10 @@ const uglify          = require('gulp-uglify');
 const pump            = require('pump');
 const csso            = require('gulp-csso');
 const jshint          = require('gulp-jshint');
-const notificator     = require('gulp-jshint-notify-reporter');          
+const notificator     = require('gulp-jshint-notify-reporter'); 
+const babel           = require('babelify');
+const fs              = require('fs');    
+
 
 //sass
 gulp.task('sass', function () {
@@ -22,20 +25,18 @@ gulp.task('sass', function () {
 
 //watch 
 gulp.task('watch',function(){
-	gulp.watch('./src/sass/**/*.sass',['sass']);
-	gulp.watch('./src/js/**/*.js',['bundle','uglify','hint']);
+	gulp.watch(['./src/sass/*.sass', './src/sass/**/*.sass'],['sass']);
+	gulp.watch(['./src/js/*.js','./src/js/**/*.js'],['bundle','hint']);
 	gulp.watch('./public/*.html', function(){log.log(log.colors.green('HTML Updated!'))});
 	gulp.watch(['./public/*.html','./public/css/*.css','./public/js/*.js'], reload);
 })
 
 //bundle
 gulp.task('bundle', function(){
-	return browserify('./src/js/main.js')
-     .bundle()
-       //Pass desired output filename to vinyl-source-stream
-     .pipe(source('main.js'))
-     // Start piping stream to tasks!
-     .pipe(gulp.dest('./public/js/'))
+	return browserify("./src/js/main.js")
+    .transform("babelify", {presets: ["es2015"]})
+    .bundle()
+    .pipe(fs.createWriteStream("./public/js/main.js"));
  })
 
 //CSS minify
@@ -62,7 +63,7 @@ gulp.task('uglify', function (cb) {
 
 //JS Hint 
 gulp.task('hint', function() {
-  return gulp.src('./public/js/*.js')
+  return gulp.src('./src/js/*.js')
   .pipe(jshint())
   .pipe(notificator())
 });
@@ -81,4 +82,4 @@ gulp.task('serve',function(){
 
 
 //default
-gulp.task('default',['serve','sass','bundle','uglify','hint','watch'])
+gulp.task('default',['serve','sass','bundle','hint','watch'])
